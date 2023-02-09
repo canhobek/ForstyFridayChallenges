@@ -1,0 +1,32 @@
+use warehouse compute_wh;
+describe warehouse compute_wh;
+
+drop database week1;
+create database challenges;
+create schema week1;
+
+create or replace stage challenges.week1.ff_s3
+    url = 's3://frostyfridaychallenges/challenge_1/';
+
+list @challenges.week1.ff_s3;
+--list @ff_s3;
+
+create file format variant_format
+type='CSV', FIELD_DELIMITER=none;
+
+SELECT $1 FROM @challenges.week1.ff_s3 (file_format => 'variant_format');
+
+create or replace table external_stage_data(
+    column1 text,
+    timestamp datetime
+    );
+    
+copy into external_stage_data
+from (select $1, current_timestamp() from @ff_s3)
+file_format = 'variant_format';
+
+select * from external_stage_data;
+
+select * from information_schema.load_history;
+
+alter warehouse compute_wh suspend;
